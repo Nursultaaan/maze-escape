@@ -104,7 +104,72 @@ public class Zones {
      * [1] the cost of the cheapest route from the zone of cell 0 to the zone of the last cell.
      */
     public static long[] routes(Input.Slides s, int[] zoneOf, int zoneCount) {
-        // TODO
-        return new long[]{0, 0};
+        Map<Long, Integer> zoneEdgeCosts = new HashMap<>();
+        int numSlides = s.from().length;
+
+        for (int i = 0; i < numSlides; i++) {
+            int u = s.from()[i];
+            int v = s.to()[i];
+            int uZone = zoneOf[u];
+            int vZone = zoneOf[v];
+            if (uZone != vZone) {
+                long edgeKey = ((long) uZone << 32) | (vZone & 0xffffffffL);
+                int cost = s.time()[i];
+                zoneEdgeCosts.put(edgeKey, Math.min(zoneEdgeCosts.getOrDefault(edgeKey, Integer.MAX_VALUE), cost));
+            }
+        }
+
+        List<List<ZoneEdge>> adj = new ArrayList<>(zoneCount);
+        for (int i = 0; i < zoneCount; i++) {
+            adj.add(new ArrayList<>());
+        }
+
+        for (Map.Entry<Long, Integer> entry : zoneEdgeCosts.entrySet()) {
+            long key = entry.getKey();
+            int uZone = (int) (key >>> 32);
+            int vZone = (int) key;
+            int cost = entry.getValue();
+            adj.get(uZone).add(new ZoneEdge(vZone, cost));
+        }
+
+        int[] longest = new int[zoneCount];
+        Arrays.fill(longest, 1);
+        int maxFlowStages = 1;
+
+        long[] minCost = new long[zoneCount];
+        Arrays.fill(minCost, Long.MAX_VALUE);
+
+        int startZone = zoneOf[0];
+        int endZone = zoneOf[zoneOf.length - 1];
+        minCost[startZone] = 0;
+
+        for (int u = 0; u < zoneCount; u++) {
+            maxFlowStages = Math.max(maxFlowStages, longest[u]);
+
+            for (ZoneEdge edge : adj.get(u)) {
+                int v = edge.to;
+                int cost = edge.cost;
+
+                longest[v] = Math.max(longest[v], longest[u] + 1);
+
+                if (minCost[u] != Long.MAX_VALUE) {
+                    minCost[v] = Math.min(minCost[v], minCost[u] + cost);
+                }
+            }
+        }
+        maxFlowStages = Math.max(maxFlowStages, longest[zoneCount - 1]);
+
+        long cheapestRouteCost = minCost[endZone];
+
+        return new long[]{maxFlowStages, cheapestRouteCost};
+    }
+
+    private static class ZoneEdge {
+        int to;
+        int cost;
+        ZoneEdge(int to, int cost) {
+            this.to = to;
+            this.cost = cost;
+        }
     }
 }
