@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>My maze</title>
+<style>
+body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:0;background:#f6f5f1;color:#222}
+header{padding:14px 20px 6px}h1{font-size:20px;margin:0 0 4px}
+.sub{font-size:13px;color:#555}
+.bar{padding:6px 20px;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px}
+.bar label{cursor:pointer;white-space:nowrap}
+button{font:inherit;padding:3px 10px;border:1px solid #999;background:#fff;border-radius:4px;cursor:pointer}
+#wrap{padding:6px 20px}canvas{background:#fff;border:1px solid #ccc;max-width:100%}
+#msg{padding:4px 20px 2px;font-size:15px;min-height:22px}
+#info{padding:0 20px 16px;font-size:13px;color:#444;min-height:18px}
+</style></head><body>
+<header><h1>My maze</h1>
+<div class="sub">Green dot: start (cell 0). Blue dot: exit (last cell). Walk with the arrow keys or W A S D. A wall that is not drawn is broken: there is a door. Move the mouse over a wall to read its line in walls.txt.</div></header>
+<div class="bar">
+<label><input type="checkbox" id="cNum"> cell numbers</label>
+<label><input type="checkbox" id="cCost"> wall costs</label>
+<label><input type="checkbox" id="cPath"> way out (Mission 3)</label>
+<label><input type="checkbox" id="cZone"> zones (Mission 4)</label>
+<label><input type="checkbox" id="cSlide"> slides</label>
+<button id="build">Watch the maze being built (Mission 1)</button> <button id="reset">Start again</button></div>
+<div id="msg"></div>
+<div id="wrap"><canvas id="cv"></canvas></div>
+<div id="info"></div>
+<script>
+const D = {"rows":9,"cols":8,"a":[45, 68, 46, 3, 43, 14, 49, 50, 19, 37, 10, 29, 3, 33, 4, 38, 53, 13, 37, 10, 40, 58, 1, 60, 27, 24, 51, 6, 57, 22, 32, 9, 61, 4, 61, 28, 60, 25, 11, 59, 33, 64, 43, 41, 59, 55, 28, 53, 40, 67, 57, 66, 56, 18, 42, 2, 63, 12, 21, 32, 11, 48, 50, 34, 14, 5, 39, 5, 46, 48, 16, 54, 38, 45, 17, 8, 6, 7, 21, 41, 47, 0, 16, 20, 31, 35, 19, 62, 56, 35, 23, 65, 70, 27, 18, 17, 12, 42, 52, 51, 0, 29, 69, 22, 15, 44, 8, 2, 34, 36, 49, 25, 44, 62, 24, 26, 54, 26, 1, 36, 9, 20, 30, 58, 13, 52, 30],"b":[53, 69, 47, 4, 51, 15, 57, 51, 20, 38, 11, 37, 11, 41, 5, 46, 54, 21, 45, 18, 48, 59, 2, 61, 35, 32, 52, 14, 58, 23, 33, 10, 69, 12, 62, 36, 68, 33, 12, 60, 34, 65, 44, 42, 67, 63, 29, 61, 41, 68, 65, 67, 57, 26, 43, 10, 71, 20, 22, 40, 19, 49, 58, 35, 22, 13, 47, 6, 54, 56, 17, 55, 39, 46, 25, 16, 7, 15, 29, 49, 55, 1, 24, 28, 39, 43, 27, 70, 64, 36, 31, 66, 71, 28, 19, 18, 13, 50, 60, 59, 8, 30, 70, 30, 23, 52, 9, 3, 42, 44, 50, 26, 45, 63, 25, 34, 62, 27, 9, 37, 17, 21, 31, 66, 14, 53, 38],"cost":[478, 254, 871, 515, 471, 135, 402, 86, 484, 357, 979, 261, 889, 376, 391, 164, 113, 581, 739, 567, 79, 373, 734, 902, 910, 762, 634, 894, 185, 933, 942, 470, 991, 908, 993, 480, 681, 973, 5, 271, 521, 225, 929, 202, 267, 18, 301, 959, 280, 306, 925, 405, 489, 509, 143, 400, 473, 764, 65, 309, 757, 158, 103, 839, 231, 338, 334, 166, 217, 683, 134, 493, 967, 557, 882, 353, 621, 951, 36, 251, 487, 792, 249, 465, 488, 689, 896, 964, 226, 432, 984, 460, 382, 513, 347, 469, 865, 199, 635, 241, 319, 633, 266, 556, 186, 832, 775, 38, 922, 456, 898, 268, 171, 887, 607, 107, 812, 510, 579, 304, 296, 219, 795, 288, 53, 414, 457],"open":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"order":[],"path":[],"zone":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],"from":[23, 53, 60, 17, 16, 1, 61, 42, 66, 7, 6, 41, 2, 63, 55, 12, 44, 60, 55, 60, 9, 71, 55, 68, 33, 69, 65, 19, 27, 25, 19, 14, 10, 49, 24, 15, 71, 39, 64, 18, 26, 11, 51, 46, 48, 28, 43, 41, 7, 62, 61, 65, 52, 31, 22, 10, 32, 6, 5, 3, 0, 14, 40, 50, 36, 13, 20, 18, 26, 18, 19, 60, 26, 56, 59, 48, 30, 67, 29, 60, 34, 5, 56, 17, 59, 70, 67, 8, 53, 57, 54, 36, 4, 35, 58, 38, 61, 47, 45, 21, 37],"to":[71, 54, 41, 70, 11, 51, 15, 61, 31, 68, 32, 8, 28, 19, 40, 33, 23, 52, 2, 70, 57, 51, 51, 35, 62, 0, 67, 23, 30, 68, 21, 20, 41, 9, 63, 39, 50, 17, 27, 51, 37, 46, 38, 56, 19, 66, 18, 33, 36, 45, 37, 44, 4, 64, 5, 26, 47, 38, 21, 1, 37, 13, 16, 67, 20, 40, 13, 44, 65, 71, 53, 36, 60, 40, 71, 7, 12, 71, 22, 61, 49, 6, 34, 68, 3, 10, 59, 48, 65, 14, 25, 8, 69, 24, 29, 43, 69, 58, 55, 6, 42],"time":[11, 20, 7, 5, 19, 4, 13, 5, 14, 13, 3, 18, 16, 3, 12, 7, 8, 2, 14, 14, 7, 4, 11, 5, 5, 6, 7, 9, 10, 1, 10, 2, 9, 6, 18, 8, 12, 10, 18, 19, 18, 5, 4, 9, 13, 5, 7, 15, 15, 1, 5, 9, 11, 15, 15, 13, 15, 2, 14, 18, 15, 17, 7, 9, 3, 5, 12, 19, 3, 18, 14, 11, 7, 10, 7, 5, 3, 3, 7, 17, 19, 15, 16, 7, 15, 17, 20, 7, 2, 1, 10, 11, 19, 1, 6, 16, 18, 16, 11, 16, 4]};
+const R = D.rows, C = D.cols, N = R * C;
+const M = 14;
+let S = Math.max(14, Math.min(48, Math.floor((Math.min(window.innerWidth, 1100) - 60) / C)));
+const cv = document.getElementById('cv'), g = cv.getContext('2d');
+cv.width = C * S + 2 * M; cv.height = R * S + 2 * M;
+const key = (a, b) => Math.min(a, b) * N + Math.max(a, b);
+const door = new Set();
+const wallOf = new Map();
+const openNow = D.open.slice();
+D.a.forEach((a, k) => { if (openNow[k]) door.add(key(a, D.b[k])); });
+const cx = c => M + (c % C) * S + S / 2, cy = c => M + Math.floor(c / C) * S + S / 2;
+function seg(k) {
+  const a = Math.min(D.a[k], D.b[k]), b = Math.max(D.a[k], D.b[k]);
+  const r = Math.floor(a / C), c = a % C;
+  if (b === a + 1) return [M + (c + 1) * S, M + r * S, M + (c + 1) * S, M + (r + 1) * S];
+  return [M + c * S, M + (r + 1) * S, M + (c + 1) * S, M + (r + 1) * S];
+}
+let me = 0, moves = 0, seen = new Set([0]), done = false;
+const msg = document.getElementById('msg'), info = document.getElementById('info');
+const on = id => document.getElementById(id).checked;
+function pathLen() { return D.path.length ? D.path.length - 1 : -1; }
+function draw() {
+  g.clearRect(0, 0, cv.width, cv.height);
+  if (on('cZone')) {
+    const zs = Math.max(...D.zone) + 1;
+    if (zs > 1) for (let c = 0; c < N; c++) {
+      g.fillStyle = 'hsl(' + Math.round(D.zone[c] * 360 / zs * 7 % 360) + ',70%,85%)';
+      g.fillRect(M + (c % C) * S, M + Math.floor(c / C) * S, S, S);
+    }
+  }
+  g.fillStyle = 'rgba(255,200,0,0.25)';
+  seen.forEach(c => g.fillRect(M + (c % C) * S + 2, M + Math.floor(c / C) * S + 2, S - 4, S - 4));
+  if (on('cSlide')) {
+    g.strokeStyle = 'rgba(120,60,180,0.35)'; g.lineWidth = 1;
+    D.from.forEach((f, i) => { g.beginPath(); g.moveTo(cx(f), cy(f)); g.lineTo(cx(D.to[i]), cy(D.to[i])); g.stroke(); });
+  }
+  g.strokeStyle = '#111'; g.lineWidth = 2;
+  g.strokeRect(M, M, C * S, R * S);
+  for (let k = 0; k < D.a.length; k++) {
+    if (openNow[k]) continue;
+    const q = seg(k);
+    g.strokeStyle = '#111'; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(q[0], q[1]); g.lineTo(q[2], q[3]); g.stroke();
+  }
+  if (on('cPath') && D.path.length > 1) {
+    g.strokeStyle = '#e02020'; g.lineWidth = 3; g.beginPath();
+    D.path.forEach((c, i) => { if (i) g.lineTo(cx(c), cy(c)); else g.moveTo(cx(c), cy(c)); });
+    g.stroke();
+  }
+  g.font = Math.max(8, Math.floor(S / 4)) + 'px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  if (on('cNum')) { g.fillStyle = '#555'; for (let c = 0; c < N; c++) g.fillText(c, M + (c % C) * S + S * 0.22, M + Math.floor(c / C) * S + S * 0.2); }
+  if (on('cCost')) {
+    g.fillStyle = '#0a5';
+    for (let k = 0; k < D.a.length; k++) { if (openNow[k]) continue; const q = seg(k); g.fillText(D.cost[k], (q[0] + q[2]) / 2, (q[1] + q[3]) / 2); }
+  }
+  const r = Math.max(4, S / 4);
+  const dot = (c, col) => { g.fillStyle = col; g.beginPath(); g.arc(cx(c), cy(c), r, 0, 7); g.fill(); };
+  dot(0, '#1a9a1a'); dot(N - 1, '#1a4ee0');
+  g.fillStyle = '#ffb000'; g.strokeStyle = '#333'; g.lineWidth = 1.5;
+  g.beginPath(); g.arc(cx(me), cy(me), r * 1.15, 0, 7); g.fill(); g.stroke();
+}
+function step(dr, dc) {
+  if (done) return;
+  const r = Math.floor(me / C), c = me % C, nr = r + dr, nc = c + dc;
+  if (nr < 0 || nc < 0 || nr >= R || nc >= C) return;
+  const t = nr * C + nc;
+  if (!door.has(key(me, t))) { msg.textContent = door.size === 0 ? 'There are no doors yet. Finish Mission 1: your program must break the walls.' : 'A wall.'; return; }
+  me = t; moves++; seen.add(t); msg.textContent = 'Moves: ' + moves;
+  if (me === N - 1) {
+    done = true; const p = pathLen();
+    msg.textContent = 'You are out in ' + moves + ' moves.' + (p >= 0 ? ' The shortest way is ' + p + ' (Path length of your program).' : '');
+  }
+  draw();
+}
+document.addEventListener('keydown', e => {
+  const m = { ArrowUp: [-1, 0], w: [-1, 0], ArrowDown: [1, 0], s: [1, 0], ArrowLeft: [0, -1], a: [0, -1], ArrowRight: [0, 1], d: [0, 1] }[e.key];
+  if (m) { e.preventDefault(); step(m[0], m[1]); }
+});
+let timer = null;
+document.getElementById('build').onclick = () => {
+  if (timer) clearInterval(timer);
+  if (!D.order.length) { msg.textContent = 'Nothing to show: your program has not broken any wall yet.'; return; }
+  const final = D.open.slice();
+  openNow.fill(0); door.clear(); me = 0; moves = 0; seen = new Set([0]); done = false; let i = 0;
+  timer = setInterval(() => {
+    const k = D.order[i++];
+    openNow[k] = 1; door.add(key(D.a[k], D.b[k]));
+    msg.textContent = 'Wall ' + i + ' of ' + D.order.length + ' broken: line ' + (k + 1) + ' of walls.txt, cells ' + D.a[k] + ' and ' + D.b[k] + '.';
+    draw();
+    if (i >= D.order.length) { clearInterval(timer); timer = null; msg.textContent = 'Done: ' + D.order.length + ' walls broken, ' + (D.a.length - D.order.length) + ' stand.'; }
+  }, Math.max(15, Math.min(120, 4000 / D.order.length)));
+};
+document.getElementById('reset').onclick = () => { me = 0; moves = 0; seen = new Set([0]); done = false; msg.textContent = ''; draw(); };
+document.querySelectorAll('.bar input').forEach(i => i.onchange = draw);
+cv.addEventListener('mousemove', e => {
+  const b = cv.getBoundingClientRect(), sx = cv.width / b.width;
+  const x = (e.clientX - b.left) * sx, y = (e.clientY - b.top) * sx;
+  let best = -1, bd = S / 3;
+  for (let k = 0; k < D.a.length; k++) {
+    const q = seg(k), d = Math.hypot((q[0] + q[2]) / 2 - x, (q[1] + q[3]) / 2 - y);
+    if (d < bd) { bd = d; best = k; }
+  }
+  info.textContent = best < 0 ? '' : 'Line ' + (best + 1) + ' of walls.txt: "' + D.a[best] + ' ' + D.b[best] + ' ' + D.cost[best] + '". The wall between cell ' + D.a[best] + ' and cell ' + D.b[best] + ', cost ' + D.cost[best] + ' to break. ' + (openNow[best] ? 'It is broken now.' : 'It stands.');
+});
+if (door.size === 0) msg.textContent = 'Your maze is closed: every wall stands. Mission 1 will open the doors.';
+draw();
+</script></body></html>
